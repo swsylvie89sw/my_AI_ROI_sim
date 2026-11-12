@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Cost Estimator (P1)</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--bd:#e2e2dc;--ac:#2f5fd0;--wn:#9a5b00;--wb:#fff4dc;--ok:#1f7a45;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--card:#1e1e1c;--tx:#ecece8;--mu:#9a9a94;--bd:#33332f;--ac:#7ea2ff;--wn:#f0c070;--wb:#2d2616;--ok:#6fd49a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141413;--card:#1e1e1c;--tx:#ecece8;--mu:#9a9a94;--bd:#33332f;--ac:#7ea2ff;--wn:#f0c070;--wb:#2d2616;--ok:#6fd49a;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:0 0 12px}
+.sub{color:var(--mu);margin:0 0 16px}
+.warn{background:var(--wb);color:var(--wn);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical;min-height:56px}
+button{width:auto;cursor:pointer;background:var(--card)}button:hover{border-color:var(--ac)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpi div{background:var(--bg);border-radius:8px;padding:10px}
+.kpi b{display:block;font-size:20px}.kpi span{font-size:12px;color:var(--mu)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td input{padding:5px 6px;min-width:70px}
+.scroll{overflow-x:auto}
+.f{font-size:12px;color:var(--mu);font-family:ui-monospace,Menlo,monospace;line-height:1.7}
+.best{color:var(--ok);font-weight:600}
+.chk{display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:10px}
+.chk label{display:flex;gap:6px;align-items:center;margin:0;color:var(--tx);font-size:13px}
+.chk input{width:auto}
+.bar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.err{color:#c0392b;font-size:12px;min-height:16px}
+</style>
+</head>
+<body>
+<main>
+<h1>AI Cost Estimator</h1>
+<p class="sub">P1 test build: estimate monthly and annual AI API costs and compare models.</p>
+<div class="warn"><b>Prices below are placeholders.</b> Replace them in the price table with the figures from each provider’s official pricing page (use the same numbers as your <code>models.json</code>) and set the “as of” date.</div>
+<section class="card">
+<label for="cur" style="margin-top:0">Display currency</label>
+<select id="cur"><option value="USD">USD ($)</option><option value="TWD">TWD (NT$)</option><option value="EUR">EUR (€)</option><option value="JPY">JPY (¥)</option><option value="GBP">GBP (£)</option><option value="CNY">CNY (CN¥)</option></select>
+<div id="fxBox" style="display:none">
+<div class="row2">
+<div><label for="fx" id="fxL">Exchange rate</label><input id="fx" type="number" min="0" step="any"></div>
+<div><label for="fxd">Rate as of (date)</label><input id="fxd" placeholder="e.g. 2026-11-12"></div>
+</div>
+<div class="err" id="fxErr"></div>
+</div>
+<p class="sub" style="margin:8px 0 0;font-size:13px">The price table is in USD (the providers’ currency). Results convert at the manual rate you enter.</p>
+</section>
+
+<div class="grid">
+<div>
+<section class="card">
+<h2>1. Use case</h2>
+<label for="name">Name (required)</label>
+<input id="name" placeholder="e.g. Customer support assistant">
+<div class="err" id="nameErr"></div>
+<label for="desc">Description (optional)</label>
+<textarea id="desc" placeholder="What will the AI do, and for whom?"></textarea>
+</section>
+
+<section class="card">
+<h2>2. Model</h2>
+<div class="row2">
+<div><label for="prov">Provider</label><select id="prov"></select></div>
+<div><label for="mod">Model</label><select id="mod"></select></div>
+</div>
+</section>
+
+<section class="card">
+<h2>3. Usage</h2>
+<div class="row2">
+<div><label for="users">Monthly users</label><input id="users" type="number" min="0" step="any"></div>
+<div><label for="freq">Interactions per user / month</label><input id="freq" type="number" min="0" step="any"></div>
+<div><label for="tin">Avg input tokens / interaction</label><input id="tin" type="number" min="0" step="any"></div>
+<div><label for="tout">Avg output tokens / interaction</label><input id="tout" type="number" min="0" step="any"></div>
+</div>
+<div class="err" id="useErr"></div>
+</section>
+</div>
+
+<div>
+<section class="card">
+<h2>Results: <span id="rName">(unnamed use case)</span></h2>
+<div class="kpi">
+<div><span>Monthly AI cost</span><b id="kM">–</b></div>
+<div><span>Annual AI cost</span><b id="kA">–</b></div>
+<div><span>Monthly input tokens</span><b id="kTi">–</b></div>
+<div><span>Monthly output tokens</span><b id="kTo">–</b></div>
+<div><span>Monthly input cost</span><b id="kCi">–</b></div>
+<div><span>Monthly output cost</span><b id="kCo">–</b></div>
+</div>
+<div class="f" id="formula"></div>
+</section>
+
+<section class="card">
+<h2>4. Compare models</h2>
+<p class="sub" style="margin-bottom:8px;font-size:13px">Tick 2 to 4 models. Same usage inputs apply to each.</p>
+<div class="chk" id="cmpList"></div>
+<div class="scroll"><table id="cmpTable"></table></div>
+</section>
+</div>
+</div>
+
+<section class="card">
+<h2>5. Price table (editable, per 1M tokens)</h2>
+<div class="scroll"><table id="priceTable"></table></div>
+<div class="bar">
+<button id="addRow">Add model</button>
+<button id="reset">Reset to defaults</button>
+</div>
+<p class="sub" style="margin:10px 0 0;font-size:13px">Edits are saved in this browser when storage is available.</p>
+</section>
+</main>
+
+<script>
+(function(){
+var DEF=[
+{p:"Provider A",m:"Small model",i:0.5,o:1.5,d:"placeholder"},
+{p:"Provider A",m:"Large model",i:5,o:15,d:"placeholder"},
+{p:"Provider B",m:"Small model",i:0.4,o:1.2,d:"placeholder"},
+{p:"Provider B",m:"Large model",i:4,o:12,d:"placeholder"}
+];
+var S={rows:clone(DEF),sel:0,cmp:[0,2],name:"",desc:"",u:{users:1000,freq:20,tin:1500,tout:500}};
+var $=function(id){return document.getElementById(id)};
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function load(){try{var s=localStorage.getItem("p1state");if(s){var o=JSON.parse(s);if(o&&o.rows&&o.rows.length){S=o}}}catch(e){}}
+function save(){try{localStorage.setItem("p1state",JSON.stringify(S))}catch(e){}}
+function num(v){var n=parseFloat(v);return isFinite(n)&&n>0?n:0}
+var CODE="USD";
+var cur={format:function(v){return new Intl.NumberFormat("en-US",{style:"currency",currency:CODE,maximumFractionDigits:2}).format(v)}};
+function sym(){try{return new Intl.NumberFormat("en-US",{style:"currency",currency:CODE}).formatToParts(0).filter(function(p){return p.type==="currency"})[0].value}catch(e){return CODE}}
+var nf=new Intl.NumberFormat("en-US",{maximumFractionDigits:0});
+function calc(u,r){
+var inter=u.users*u.freq,ti=inter*u.tin,to=inter*u.tout;
+var ci=ti/1e6*r.i,co=to/1e6*r.o,m=ci+co;
+return{inter:inter,ti:ti,to:to,ci:ci,co:co,m:m,a:m*12};
+}
+function fx(){return CODE==="USD"?1:num((S.rates&&S.rates[CODE]||{}).r)}
+function conv(r,k){return{p:r.p,m:r.m,i:r.i*k,o:r.o*k}}
+function showFx(){$("fxBox").style.display=CODE==="USD"?"none":"block";$("fxL").textContent="1 USD = ? "+CODE;var o=(S.rates&&S.rates[CODE])||{};$("fx").value=o.r||"";$("fxd").value=o.d||""}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+function fillSelects(){
+var provs=[];S.rows.forEach(function(r){if(provs.indexOf(r.p)<0)provs.push(r.p)});
+var cp=S.rows[S.sel]?S.rows[S.sel].p:provs[0];
+$("prov").innerHTML=provs.map(function(p){return'<option'+(p===cp?" selected":"")+'>'+esc(p)+'</option>'}).join("");
+var opts="";S.rows.forEach(function(r,i){if(r.p===cp)opts+='<option value="'+i+'"'+(i===S.sel?" selected":"")+'>'+esc(r.m)+'</option>'});
+$("mod").innerHTML=opts;
+}
+function fillCompare(){
+$("cmpList").innerHTML=S.rows.map(function(r,i){return'<label><input type="checkbox" data-i="'+i+'"'+(S.cmp.indexOf(i)>-1?" checked":"")+'>'+esc(r.p)+' / '+esc(r.m)+'</label>'}).join("");
+}
+function fillPrices(){
+var h='<tr><th>Provider</th><th>Model</th><th>Input $ (USD)/1M</th><th>Output $ (USD)/1M</th><th>As of</th><th></th></tr>';
+S.rows.forEach(function(r,i){h+='<tr data-i="'+i+'"><td><input data-f="p" value="'+esc(r.p)+'"></td><td><input data-f="m" value="'+esc(r.m)+'"></td><td><input data-f="i" type="number" min="0" step="any" value="'+r.i+'"></td><td><input data-f="o" type="number" min="0" step="any" value="'+r.o+'"></td><td><input data-f="d" value="'+esc(r.d)+'"></td><td><button data-del="'+i+'">Delete</button></td></tr>'});
+$("priceTable").innerHTML=h;
+}
+function results(){
+var u={users:num($("users").value),freq:num($("freq").value),tin:num($("tin").value),tout:num($("tout").value)};
+S.u={users:u.users,freq:u.freq,tin:u.tin,tout:u.tout};
+S.name=$("name").value;S.desc=$("desc").value;
+$("nameErr").textContent=S.name.trim()?"":"A use case name is required.";
+$("useErr").textContent=(u.users&&u.freq&&u.tin+u.tout>0)?"":"Enter usage values above zero to see costs.";
+$("rName").textContent=S.name.trim()||"(unnamed use case)";
+var r0=S.rows[S.sel];if(!r0)return;var k=fx();$("fxErr").textContent=(CODE!=="USD"&&!k)?"Enter an exchange rate to convert the USD prices.":"";var r=conv(r0,k);
+var c=calc(u,r);
+$("kM").textContent=cur.format(c.m);$("kA").textContent=cur.format(c.a);
+$("kTi").textContent=nf.format(c.ti);$("kTo").textContent=nf.format(c.to);
+$("kCi").textContent=cur.format(c.ci);$("kCo").textContent=cur.format(c.co);
+$("formula").innerHTML=
+"interactions = "+nf.format(u.users)+" × "+nf.format(u.freq)+" = "+nf.format(c.inter)+"<br>"+
+"input tokens = "+nf.format(c.inter)+" × "+nf.format(u.tin)+" = "+nf.format(c.ti)+"<br>"+
+"output tokens = "+nf.format(c.inter)+" × "+nf.format(u.tout)+" = "+nf.format(c.to)+"<br>"+
+"input cost = "+nf.format(c.ti)+" / 1,000,000 × "+r0.i+(CODE==="USD"?"":" × "+k)+" = "+cur.format(c.ci)+"<br>"+
+"output cost = "+nf.format(c.to)+" / 1,000,000 × "+r0.o+(CODE==="USD"?"":" × "+k)+" = "+cur.format(c.co)+"<br>"+
+"monthly = "+cur.format(c.ci)+" + "+cur.format(c.co)+" = "+cur.format(c.m)+"; annual = monthly × 12 = "+cur.format(c.a);
+compare(u);save();
+}
+function compare(u){
+var ids=S.cmp.filter(function(i){return S.rows[i]});
+if(ids.length<2){$("cmpTable").innerHTML='<tr><td>Select at least two models to compare.</td></tr>';return}
+var data=ids.map(function(i){var r=S.rows[i];return{r:r,c:calc(u,conv(r,fx()))}});
+var min=Math.min.apply(null,data.map(function(d){return d.c.m}));
+var h='<tr><th>Model</th><th>Monthly</th><th>Annual</th><th>vs cheapest</th></tr>';
+data.forEach(function(d){
+var diff=min>0?(d.c.m-min)/min*100:0;
+var best=d.c.m===min;
+h+='<tr><td>'+esc(d.r.p)+' / '+esc(d.r.m)+'</td><td>'+cur.format(d.c.m)+'</td><td>'+cur.format(d.c.a)+'</td><td class="'+(best?"best":"")+'">'+(best?"Cheapest":"+"+diff.toFixed(1)+"%")+'</td></tr>';
+});
+$("cmpTable").innerHTML=h;
+}
+function init(){
+load();
+$("name").value=S.name;$("desc").value=S.desc;
+$("users").value=S.u.users;$("freq").value=S.u.freq;$("tin").value=S.u.tin;$("tout").value=S.u.tout;
+CODE=S.cur||"USD";$("cur").value=CODE;showFx();
+if(S.sel>=S.rows.length)S.sel=0;
+fillSelects();fillCompare();fillPrices();results();
+}
+["name","desc","users","freq","tin","tout"].forEach(function(id){$(id).addEventListener("input",results)});
+$("prov").addEventListener("change",function(){
+for(var i=0;i<S.rows.length;i++){if(S.rows[i].p===$("prov").value){S.sel=i;break}}
+fillSelects();results();
+});
+$("mod").addEventListener("change",function(){S.sel=parseInt($("mod").value,10);results()});
+$("cmpList").addEventListener("change",function(e){
+var i=parseInt(e.target.getAttribute("data-i"),10);
+var k=S.cmp.indexOf(i);
+if(e.target.checked){if(k<0){if(S.cmp.length>=4){e.target.checked=false;return}S.cmp.push(i)}}else if(k>-1){S.cmp.splice(k,1)}
+results();
+});
+$("priceTable").addEventListener("input",function(e){
+var tr=e.target.closest("tr"),f=e.target.getAttribute("data-f");if(!tr||!f)return;
+var r=S.rows[parseInt(tr.getAttribute("data-i"),10)];
+r[f]=(f==="i"||f==="o")?num(e.target.value):e.target.value;
+fillSelects();fillCompare();results();
+});
+$("priceTable").addEventListener("click",function(e){
+var d=e.target.getAttribute("data-del");if(d===null)return;
+if(S.rows.length<=1)return;
+d=parseInt(d,10);S.rows.splice(d,1);
+S.cmp=S.cmp.filter(function(i){return i!==d}).map(function(i){return i>d?i-1:i});
+if(S.sel>=S.rows.length||S.sel===d)S.sel=0;
+fillSelects();fillCompare();fillPrices();results();
+});
+$("addRow").addEventListener("click",function(){
+S.rows.push({p:"New provider",m:"New model",i:0,o:0,d:""});
+fillSelects();fillCompare();fillPrices();results();
+});
+$("cur").addEventListener("change",function(){CODE=S.cur=$("cur").value;showFx();fillPrices();results()});
+function setFx(){S.rates=S.rates||{};S.rates[CODE]={r:$("fx").value,d:$("fxd").value};results()}
+$("fx").addEventListener("input",setFx);$("fxd").addEventListener("input",setFx);
+$("reset").addEventListener("click",function(){
+S.rows=clone(DEF);S.sel=0;S.cmp=[0,2];
+fillSelects();fillCompare();fillPrices();results();
+});
+init();
+})();
+</script>
+</body>
+</html>

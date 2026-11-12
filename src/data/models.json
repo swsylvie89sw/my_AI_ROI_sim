@@ -1,0 +1,58 @@
+[
+  {
+    "provider": "OpenAI",
+    "model": "gpt-5.4-nano",
+    "inputPricePer1M": 0.2,
+    "outputPricePer1M": 1.25,
+    "priceAsOf": "2026-11-12",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-nano"
+  },
+  {
+    "provider": "OpenAI",
+    "model": "gpt-5.4-mini",
+    "inputPricePer1M": 0.75,
+    "outputPricePer1M": 4.5,
+    "priceAsOf": "2026-11-12",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-mini"
+  },
+  {
+    "provider": "OpenAI",
+    "model": "gpt-5.4",
+    "inputPricePer1M": 2.5,
+    "outputPricePer1M": 15,
+    "priceAsOf": "2026-11-12",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4"
+  },
+  {
+    "provider": "Google",
+    "model": "gemini-3.1-flash-lite",
+    "inputPricePer1M": 0.25,
+    "outputPricePer1M": 1.5,
+    "priceAsOf": "2026-11-12",
+    "source": "https://ai.google.dev/gemini-api/docs/pricing"
+  },
+  {
+    "provider": "Google",
+    "model": "gemini-3-flash-preview",
+    "inputPricePer1M": 0.5,
+    "outputPricePer1M": 3,
+    "priceAsOf": "2026-11-12",
+    "source": "https://ai.google.dev/gemini-api/docs/pricing"
+  },
+  {
+    "provider": "Anthropic",
+    "model": "Claude Sonnet 5.5",
+    "inputPricePer1M": 2,
+    "outputPricePer1M": 10,
+    "priceAsOf": "2026-11-12",
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+  },
+  {
+    "provider": "Anthropic",
+    "model": "Claude Opus 5.5",
+    "inputPricePer1M": 4,
+    "outputPricePer1M": 20,
+    "priceAsOf": "2026-11-12",
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+  }
+]
